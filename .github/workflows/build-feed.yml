@@ -1,0 +1,46 @@
+name: Rigenera feed RSS notizie Prefettura di Mantova
+
+# SOLO trigger manuale/API: nessuno "schedule" interno.
+# Va innescato da un cronjob esterno (es. cron-job.org) che chiama:
+#   POST https://api.github.com/repos/mbmichele/feed_prefettura_mn/actions/workflows/build-feed.yml/dispatches
+#   body: {"ref": "main"}
+#   header: Authorization: Bearer <PAT con permesso "Actions: write">
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-feed
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Genera il feed
+        run: python scripts/generate_feed.py
+
+      - name: Commit e push solo se il feed è cambiato
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- docs/feed.xml; then
+            echo "Nessuna modifica al feed, niente da committare."
+          else
+            git add docs/feed.xml
+            git commit -m "Aggiorna feed.xml [skip ci]"
+            git push
+          fi
