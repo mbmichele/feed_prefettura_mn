@@ -320,7 +320,7 @@ def build_rss(items: list) -> str:
     <link>{escape(CHANNEL_LINK)}</link>
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
-    <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/feed.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml" rel="self" type="application/rss+xml" />
     <lastBuildDate>{format_datetime(now)}</lastBuildDate>
 {chr(10).join(items_xml)}
   </channel>

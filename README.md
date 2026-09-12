@@ -52,9 +52,9 @@ Il repository di riferimento è:
 
 1. Vai su **Settings → Pages**.
 2. In "Build and deployment", seleziona **Deploy from a branch**.
-3. Branch: `main`, cartella: `/docs`.
+3. Branch: `main`, cartella: `/ (root)`.
 4. Salva. Il feed sarà raggiungibile (dopo qualche minuto) su:
-   `https://mbmichele.github.io/feed_prefettura_mn/feed.xml`
+   `https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml`
 
 ## 3. Creazione del Personal Access Token (PAT)
 
@@ -184,3 +184,7 @@ prima quale sia il sito e lo schema URL realmente corretti.
 - **v1.2.0**: il workflow ora ha **sia** uno schedule interno di GitHub
   Actions (ogni ora) **sia** il trigger `workflow_dispatch` per il cron
   esterno — non più solo quest'ultimo.
+- **v1.3.0**: corretto l'indirizzo pubblico del feed:
+  `https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml` (GitHub
+  Pages pubblica dalla root del branch `main`, non dalla cartella `/docs`
+  come sorgente — per questo il path include `docs/`).
