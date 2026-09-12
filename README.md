@@ -68,9 +68,20 @@ API GitHub:
 3. Copia il token: ti servirà per configurare il cronjob esterno (non va
    mai salvato nel repository).
 
-## 4. Configurazione del cronjob esterno (es. cron-job.org)
+## 4. Doppio meccanismo di aggiornamento (cron interno + cron esterno)
 
-Su [cron-job.org](https://cron-job.org) (o servizio equivalente):
+Il workflow ha due modi per essere innescato, entrambi attivi:
+
+- **Cron interno di GitHub Actions**: gira automaticamente ogni ora
+  (`schedule: cron: "0 * * * *"` in `.github/workflows/build-feed.yml`),
+  senza bisogno di configurare nulla.
+- **Cron esterno** (es. cron-job.org), come innesco aggiuntivo/di backup più
+  puntuale — utile perché lo schedule interno di GitHub Actions non
+  garantisce l'orario esatto (può slittare di qualche minuto nei momenti di
+  carico).
+
+Per configurare anche il cron esterno, su
+[cron-job.org](https://cron-job.org) (o servizio equivalente):
 
 - **URL**: 
   ```
@@ -89,8 +100,8 @@ Su [cron-job.org](https://cron-job.org) (o servizio equivalente):
   ```
 - **Frequenza**: ogni ora (o come preferisci).
 
-Ogni chiamata innesca la Action, che rigenera `docs/feed.xml` e fa commit
-solo se il contenuto è effettivamente cambiato.
+Qualunque sia l'innesco (interno o esterno), il workflow rigenera
+`docs/feed.xml` e fa commit solo se il contenuto è effettivamente cambiato.
 
 ## 5. Esecuzione manuale (facoltativa)
 
@@ -170,3 +181,6 @@ prima quale sia il sito e lo schema URL realmente corretti.
   dell'URL (non per URL esatto), perché lo stesso comunicato può comparire
   sotto entrambi i prefissi `/notizie/<slug>` e
   `/comunicati-stampa/<slug>`.
+- **v1.2.0**: il workflow ora ha **sia** uno schedule interno di GitHub
+  Actions (ogni ora) **sia** il trigger `workflow_dispatch` per il cron
+  esterno — non più solo quest'ultimo.
