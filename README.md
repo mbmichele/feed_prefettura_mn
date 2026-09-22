@@ -16,14 +16,18 @@ Il feed viene pubblicato tramite GitHub Pages e rigenerato periodicamente
 tramite una GitHub Action, innescata da un cronjob esterno (nessuno
 schedule interno alla Action).
 
-⚠️ **Nota tecnica**: durante lo sviluppo il sito ha mostrato segnali di
-protezione anti-bot verso richieste automatiche esterne. Lo script è stato
-scritto per essere il più robusto possibile (header realistici, rilevamento
-esplicito di pagine di "verifica", estrazione basata su pattern generici),
-ma non è stato possibile validare al 100% i selettori HTML contro il sito
-reale in fase di sviluppo. Se dopo il primo run il feed risulta vuoto o
-impreciso, guarda i log dell'Action e le funzioni indicate in cima a
-`scripts/generate_feed.py`.
+⚠️ **Nota tecnica**: il sito ha una protezione anti-bot che restituisce 403
+alle richieste "troppo semplici" (confermato dai log della prima esecuzione
+reale della Action). Lo script usa quindi: una sessione
+`requests.Session()` persistente, un set completo di header da browser
+reale (Chrome/Windows, incluso `Sec-Fetch-*`), una visita preliminare alla
+home per acquisire eventuali cookie, `Referer` impostato sulla pagina di
+provenienza, e fino a 3 tentativi con backoff se riceve 403/429/503. Se
+dopo un run il feed risulta ancora vuoto, guarda i log dell'Action: se il
+403 persiste nonostante i ritentativi, il sito potrebbe richiedere una
+verifica più sofisticata (es. JavaScript challenge) non superabile da un
+semplice client HTTP — in quel caso l'unica strada resterebbe uno scraping
+"headless browser" (Playwright), non incluso in questa versione.
 
 ## Struttura del repository
 
@@ -188,3 +192,8 @@ prima quale sia il sito e lo schema URL realmente corretti.
   `https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml` (GitHub
   Pages pubblica dalla root del branch `main`, non dalla cartella `/docs`
   come sorgente — per questo il path include `docs/`).
+- **v1.4.0**: risolto il blocco 403 osservato nella prima esecuzione reale
+  della Action (log: `Status 403` su entrambe le pagine di elenco). Lo
+  scraping ora usa una sessione persistente con header completi da
+  browser, warm-up sulla home, `Referer` e ritentativi con backoff su
+  403/429/503.

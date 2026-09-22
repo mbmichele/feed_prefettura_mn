@@ -52,6 +52,7 @@ NOTE IMPORTANTI PER CHI MANUTIENE QUESTO SCRIPT:
 import re
 import sys
 import time
+import random
 import hashlib
 from datetime import datetime
 from email.utils import format_datetime
@@ -80,15 +81,58 @@ DETAIL_PATH_RE = re.compile(r"/(?:notizie|comunicati-stampa)/([^/?#]+?)/?$")
 FEED_PATH = "docs/feed.xml"
 MAX_ITEMS = 60
 REQUEST_TIMEOUT = 25
-REQUEST_DELAY_SECONDS = 1.0  # cortesia verso il server tra una richiesta e l'altra
+REQUEST_DELAY_MIN = 1.5  # cortesia verso il server tra una richiesta e l'altra
+REQUEST_DELAY_MAX = 3.0
+MAX_RETRIES = 3
 
+# Header completi "da browser vero" (Chrome su Windows). Il sito ha
+# risposto 403 a richieste con soli User-Agent + Accept-Language: un set
+# di header incompleto e' uno dei segnali piu' comuni usati dai WAF (es.
+# Akamai/Cloudflare) per bloccare richieste automatiche.
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     ),
-    "Accept-Language": "it-IT,it;q=0.9",
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "image/avif,image/webp,image/apng,*/*;q=0.8"
+    ),
+    "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Cache-Control": "max-age=0",
 }
+
+# Sessione condivisa: mantiene i cookie tra una richiesta e l'altra, come
+# farebbe un browser reale (il sito potrebbe assegnare un cookie di
+# sessione/anti-bot alla prima visita e pretenderlo nelle richieste
+# successive).
+SESSION = requests.Session()
+SESSION.headers.update(HEADERS)
+_warmed_up = False
+
+
+def _warm_up():
+    """Visita la home del sito prima delle pagine di elenco, per far
+    assegnare alla sessione eventuali cookie richiesti dal WAF."""
+    global _warmed_up
+    if _warmed_up:
+        return
+    try:
+        SESSION.get(BASE_URL, timeout=REQUEST_TIMEOUT)
+    except requests.RequestException as exc:
+        print(f"[AVVISO] Warm-up su {BASE_URL} fallito: {exc}", file=sys.stderr)
+    _warmed_up = True
+    time.sleep(random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX))
 
 MESI_ITA = {
     "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4,
@@ -125,15 +169,41 @@ def _looks_like_bot_challenge(html: str) -> bool:
     return any(s in lowered for s in signals)
 
 
-def fetch(url: str) -> BeautifulSoup | None:
-    try:
-        resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
-    except requests.RequestException as exc:
-        print(f"[ERRORE] Richiesta fallita per {url}: {exc}", file=sys.stderr)
-        return None
+def fetch(url: str, referer: str | None = None) -> BeautifulSoup | None:
+    _warm_up()
 
-    if resp.status_code != 200:
-        print(f"[ERRORE] Status {resp.status_code} per {url}", file=sys.stderr)
+    extra_headers = {}
+    if referer:
+        extra_headers["Referer"] = referer
+
+    resp = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            resp = SESSION.get(url, headers=extra_headers, timeout=REQUEST_TIMEOUT)
+        except requests.RequestException as exc:
+            print(f"[ERRORE] Richiesta fallita per {url} (tentativo {attempt}): {exc}", file=sys.stderr)
+            resp = None
+        else:
+            if resp.status_code == 200:
+                break
+            if resp.status_code in (403, 429, 503):
+                # Possibile blocco temporaneo anti-bot: aspetta di piu' e riprova
+                wait = (attempt * 3) + random.uniform(1, 3)
+                print(
+                    f"[AVVISO] Status {resp.status_code} per {url} "
+                    f"(tentativo {attempt}/{MAX_RETRIES}), riprovo tra {wait:.1f}s.",
+                    file=sys.stderr,
+                )
+                time.sleep(wait)
+                continue
+            else:
+                print(f"[ERRORE] Status {resp.status_code} per {url}", file=sys.stderr)
+                return None
+        time.sleep(random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX))
+
+    if resp is None or resp.status_code != 200:
+        status = resp.status_code if resp is not None else "n/d"
+        print(f"[ERRORE] Impossibile ottenere {url} dopo {MAX_RETRIES} tentativi (ultimo status: {status}).", file=sys.stderr)
         return None
 
     if _looks_like_bot_challenge(resp.text):
@@ -229,9 +299,9 @@ def extract_description_from_detail(soup: BeautifulSoup) -> str:
     return description
 
 
-def scrape_new_item(url: str, link_text_fallback: str):
-    time.sleep(REQUEST_DELAY_SECONDS)
-    soup = fetch(url)
+def scrape_new_item(url: str, link_text_fallback: str, referer: str | None = None):
+    soup = fetch(url, referer=referer)
+    time.sleep(random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX))  # cortesia prima della prossima richiesta
     if soup is None:
         return None
 
@@ -334,8 +404,11 @@ def main():
     candidates_by_slug = {}
     any_listing_ok = False
 
+    detail_referer = {}  # url dettaglio -> pagina di elenco da usare come Referer
+
     for listing_url in LISTING_URLS:
-        listing_soup = fetch(listing_url)
+        listing_soup = fetch(listing_url, referer=BASE_URL)
+        time.sleep(random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX))
         if listing_soup is None:
             print(f"[AVVISO] Impossibile leggere la pagina di elenco: {listing_url}", file=sys.stderr)
             continue
@@ -355,6 +428,7 @@ def main():
             slug = extract_slug(url)
             if slug is None:
                 continue
+            detail_referer.setdefault(url, listing_url)
             if slug not in candidates_by_slug:
                 candidates_by_slug[slug] = (url, link_text_map.get(url, ""))
 
@@ -384,7 +458,7 @@ def main():
     for slug, (url, link_text) in candidates_by_slug.items():
         if slug in merged_by_slug:
             continue
-        item = scrape_new_item(url, link_text_fallback=link_text)
+        item = scrape_new_item(url, link_text_fallback=link_text, referer=detail_referer.get(url))
         if item:
             merged_by_slug[slug] = item
             new_count += 1
