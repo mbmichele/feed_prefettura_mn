@@ -32,16 +32,25 @@ Lo script:
   6. scrive docs/feed.xml (RSS 2.0 valido)
 
 NOTE IMPORTANTI PER CHI MANUTIENE QUESTO SCRIPT:
-  - Il sito ha mostrato protezioni anti-bot durante lo sviluppo: se lo
-    scraping smette di funzionare, la prima cosa da controllare e' se il
-    sito restituisce una pagina di "verifica"/challenge invece dell'HTML
-    reale (vedi `_looks_like_bot_challenge`).
+  - Il sito ha una protezione anti-bot che ha continuato a restituire 403
+    anche con header completi da browser, sessione persistente, Referer e
+    ritentativi (confermato da due esecuzioni reali della Action, log del
+    2026-09-19 e del 2026-10-03). Questo esclude un blocco basato sui soli
+    header HTTP: per questo lo script ora usa Playwright (Chromium
+    headless) per caricare le pagine come farebbe un browser vero,
+    eseguendo anche eventuale JavaScript di verifica (vedi `fetch`,
+    `_get_browser_context`). Se il 403 dovesse persistere ANCHE con
+    Playwright, il blocco e' molto probabilmente legato alla rete/IP dei
+    runner di GitHub Actions (intervalli IP noti di provider cloud spesso
+    bloccati a prescindere dal browser usato): in quel caso l'unica strada
+    sarebbe eseguire lo scraping da una rete non riconoscibile come
+    "datacenter" (es. un servizio di proxy residenziali), il che esula
+    dallo scopo di un progetto gratuito/amatoriale come questo.
   - Le classi CSS esatte del sito non sono state verificate manualmente in
-    fase di sviluppo (fetch bloccato durante i test). L'estrazione e'
-    quindi basata su pattern generici (tag semantici, regex sulle date in
-    italiano) pensati per essere ragionevolmente robusti ai cambi di
-    markup. Se dopo il primo run reale l'estrazione di titolo/data/
-    descrizione risultasse imprecisa, vedi le funzioni
+    fase di sviluppo iniziale. L'estrazione e' quindi basata su pattern
+    generici (tag semantici, regex sulle date in italiano) pensati per
+    essere ragionevolmente robusti ai cambi di markup. Se l'estrazione di
+    titolo/data/descrizione risultasse imprecisa, vedi le funzioni
     `extract_title_from_detail`, `extract_date_from_detail` e
     `extract_description_from_detail`: sono i punti da aggiustare.
   - Se in futuro comparisse un terzo prefisso di dettaglio (oltre a
@@ -53,14 +62,13 @@ import re
 import sys
 import time
 import random
-import hashlib
 from datetime import datetime
 from email.utils import format_datetime
 from urllib.parse import urljoin
 from xml.sax.saxutils import escape
 
-import requests
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright, Error as PlaywrightError
 
 try:
     from zoneinfo import ZoneInfo
@@ -74,6 +82,11 @@ LISTING_URLS = [
 ]
 BASE_URL = "https://prefettura.interno.gov.it"
 CHANNEL_LINK = LISTING_URLS[0]
+# URL pubblico del feed generato (GitHub Pages pubblica dalla root del
+# branch main, non dalla cartella /docs come sorgente: per questo il path
+# include "docs/").
+FEED_PUBLIC_URL = "https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml"
+
 # Path dei prefissi sotto cui possono trovarsi le pagine di dettaglio di un
 # comunicato. Lo stesso comunicato puo' avere lo stesso slug sotto prefissi
 # diversi (alias Drupal): la deduplica avviene sullo slug, non sull'URL.
@@ -85,54 +98,76 @@ REQUEST_DELAY_MIN = 1.5  # cortesia verso il server tra una richiesta e l'altra
 REQUEST_DELAY_MAX = 3.0
 MAX_RETRIES = 3
 
-# Header completi "da browser vero" (Chrome su Windows). Il sito ha
-# risposto 403 a richieste con soli User-Agent + Accept-Language: un set
-# di header incompleto e' uno dei segnali piu' comuni usati dai WAF (es.
-# Akamai/Cloudflare) per bloccare richieste automatiche.
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-    ),
-    "Accept": (
-        "text/html,application/xhtml+xml,application/xml;q=0.9,"
-        "image/avif,image/webp,image/apng,*/*;q=0.8"
-    ),
-    "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-    "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"Windows"',
-    "Cache-Control": "max-age=0",
-}
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
+ACCEPT_LANGUAGE = "it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7"
 
-# Sessione condivisa: mantiene i cookie tra una richiesta e l'altra, come
-# farebbe un browser reale (il sito potrebbe assegnare un cookie di
-# sessione/anti-bot alla prima visita e pretenderlo nelle richieste
-# successive).
-SESSION = requests.Session()
-SESSION.headers.update(HEADERS)
+# Stato globale di Playwright: un solo browser/contesto per tutta
+# l'esecuzione dello script, cosi' i cookie restano condivisi tra le
+# richieste (come in una normale sessione di navigazione).
+_playwright = None
+_browser = None
+_browser_context = None
 _warmed_up = False
 
 
+def _get_context():
+    """Avvia Playwright/Chromium al primo utilizzo e riusa lo stesso
+    browser context per tutte le richieste successive."""
+    global _playwright, _browser, _browser_context
+    if _browser_context is not None:
+        return _browser_context
+
+    _playwright = sync_playwright().start()
+    _browser = _playwright.chromium.launch(headless=True)
+    _browser_context = _browser.new_context(
+        user_agent=USER_AGENT,
+        locale="it-IT",
+        viewport={"width": 1366, "height": 768},
+        extra_http_headers={"Accept-Language": ACCEPT_LANGUAGE},
+    )
+    return _browser_context
+
+
+def close_browser():
+    """Chiude ordinatamente Chromium/Playwright a fine esecuzione."""
+    global _playwright, _browser, _browser_context
+    try:
+        if _browser is not None:
+            _browser.close()
+    except Exception:
+        pass
+    try:
+        if _playwright is not None:
+            _playwright.stop()
+    except Exception:
+        pass
+    _browser = None
+    _browser_context = None
+    _playwright = None
+
+
 def _warm_up():
-    """Visita la home del sito prima delle pagine di elenco, per far
-    assegnare alla sessione eventuali cookie richiesti dal WAF."""
+    """Visita la home del sito con un browser vero prima delle pagine di
+    elenco, per far assegnare al contesto eventuali cookie richiesti dal
+    WAF/anti-bot."""
     global _warmed_up
     if _warmed_up:
         return
+    context = _get_context()
+    page = context.new_page()
     try:
-        SESSION.get(BASE_URL, timeout=REQUEST_TIMEOUT)
-    except requests.RequestException as exc:
+        page.goto(BASE_URL, timeout=REQUEST_TIMEOUT * 1000, wait_until="domcontentloaded")
+        page.wait_for_timeout(1200)
+    except PlaywrightError as exc:
         print(f"[AVVISO] Warm-up su {BASE_URL} fallito: {exc}", file=sys.stderr)
+    finally:
+        page.close()
     _warmed_up = True
     time.sleep(random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX))
+
 
 MESI_ITA = {
     "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4,
@@ -170,43 +205,58 @@ def _looks_like_bot_challenge(html: str) -> bool:
 
 
 def fetch(url: str, referer: str | None = None) -> BeautifulSoup | None:
+    """Carica una pagina con un browser headless reale (Playwright/
+    Chromium) invece di una semplice richiesta HTTP: il sito ha continuato
+    a rispondere 403 anche con header completi e sessione persistente, il
+    che indica una verifica piu' sofisticata di un controllo sugli header."""
     _warm_up()
+    context = _get_context()
 
-    extra_headers = {}
-    if referer:
-        extra_headers["Referer"] = referer
-
-    resp = None
+    status = None
+    html = None
     for attempt in range(1, MAX_RETRIES + 1):
+        page = context.new_page()
         try:
-            resp = SESSION.get(url, headers=extra_headers, timeout=REQUEST_TIMEOUT)
-        except requests.RequestException as exc:
-            print(f"[ERRORE] Richiesta fallita per {url} (tentativo {attempt}): {exc}", file=sys.stderr)
-            resp = None
-        else:
-            if resp.status_code == 200:
-                break
-            if resp.status_code in (403, 429, 503):
-                # Possibile blocco temporaneo anti-bot: aspetta di piu' e riprova
-                wait = (attempt * 3) + random.uniform(1, 3)
-                print(
-                    f"[AVVISO] Status {resp.status_code} per {url} "
-                    f"(tentativo {attempt}/{MAX_RETRIES}), riprovo tra {wait:.1f}s.",
-                    file=sys.stderr,
+            try:
+                response = page.goto(
+                    url,
+                    referer=referer,
+                    timeout=REQUEST_TIMEOUT * 1000,
+                    wait_until="domcontentloaded",
                 )
-                time.sleep(wait)
-                continue
+            except PlaywrightError as exc:
+                print(f"[ERRORE] Navigazione fallita per {url} (tentativo {attempt}): {exc}", file=sys.stderr)
+                status = None
             else:
-                print(f"[ERRORE] Status {resp.status_code} per {url}", file=sys.stderr)
-                return None
-        time.sleep(random.uniform(REQUEST_DELAY_MIN, REQUEST_DELAY_MAX))
+                status = response.status if response else None
+                if status == 200:
+                    # piccola attesa per eventuale contenuto/verifica caricati via JS
+                    page.wait_for_timeout(1200)
+                    html = page.content()
+        finally:
+            page.close()
 
-    if resp is None or resp.status_code != 200:
-        status = resp.status_code if resp is not None else "n/d"
+        if status == 200 and html is not None:
+            break
+
+        if status in (403, 429, 503) or status is None:
+            wait = (attempt * 3) + random.uniform(1, 3)
+            print(
+                f"[AVVISO] Status {status} per {url} "
+                f"(tentativo {attempt}/{MAX_RETRIES}), riprovo tra {wait:.1f}s.",
+                file=sys.stderr,
+            )
+            time.sleep(wait)
+            continue
+        else:
+            print(f"[ERRORE] Status {status} per {url}", file=sys.stderr)
+            return None
+
+    if html is None:
         print(f"[ERRORE] Impossibile ottenere {url} dopo {MAX_RETRIES} tentativi (ultimo status: {status}).", file=sys.stderr)
         return None
 
-    if _looks_like_bot_challenge(resp.text):
+    if _looks_like_bot_challenge(html):
         print(
             f"[ERRORE] La risposta per {url} sembra una pagina di verifica "
             "anti-bot, non il contenuto reale.",
@@ -214,7 +264,7 @@ def fetch(url: str, referer: str | None = None) -> BeautifulSoup | None:
         )
         return None
 
-    return BeautifulSoup(resp.text, "html.parser")
+    return BeautifulSoup(html, "html.parser")
 
 
 def strip_leading_category_labels(text: str) -> str:
@@ -390,7 +440,7 @@ def build_rss(items: list) -> str:
     <link>{escape(CHANNEL_LINK)}</link>
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
-    <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="{escape(FEED_PUBLIC_URL)}" rel="self" type="application/rss+xml" />
     <lastBuildDate>{format_datetime(now)}</lastBuildDate>
 {chr(10).join(items_xml)}
   </channel>
@@ -399,11 +449,10 @@ def build_rss(items: list) -> str:
     return rss
 
 
-def main():
+def _main():
     # slug -> (url, testo del link, in quale pagina di elenco e' comparso)
     candidates_by_slug = {}
     any_listing_ok = False
-
     detail_referer = {}  # url dettaglio -> pagina di elenco da usare come Referer
 
     for listing_url in LISTING_URLS:
@@ -477,6 +526,13 @@ def main():
         f.write(rss_xml)
 
     print(f"Feed scritto in {FEED_PATH} con {len(items)} elementi totali.")
+
+
+def main():
+    try:
+        _main()
+    finally:
+        close_browser()
 
 
 if __name__ == "__main__":

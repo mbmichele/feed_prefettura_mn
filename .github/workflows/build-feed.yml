@@ -38,6 +38,9 @@ jobs:
       - name: Installa dipendenze
         run: pip install -r requirements.txt
 
+      - name: Installa Chromium (Playwright)
+        run: playwright install --with-deps chromium
+
       - name: Genera il feed
         run: python scripts/generate_feed.py
 
@@ -50,5 +53,12 @@ jobs:
           else
             git add docs/feed.xml
             git commit -m "Aggiorna feed.xml [skip ci]"
-            git push
+            # ritenta con rebase in caso di push concorrente (cron interno + esterno)
+            for i in 1 2 3; do
+              if git push; then
+                break
+              fi
+              echo "Push fallito (tentativo $i), provo pull --rebase e ritento..."
+              git pull --rebase origin main
+            done
           fi

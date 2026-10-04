@@ -12,22 +12,32 @@ comunicato può comparire con lo stesso slug sotto entrambi i prefissi
 (alias interni del sito), quindi lo script deduplica per slug e non per URL
 esatto, per evitare doppioni nel feed.
 
-Il feed viene pubblicato tramite GitHub Pages e rigenerato periodicamente
-tramite una GitHub Action, innescata da un cronjob esterno (nessuno
-schedule interno alla Action).
+## 📡 Indirizzo del feed RSS
 
-⚠️ **Nota tecnica**: il sito ha una protezione anti-bot che restituisce 403
-alle richieste "troppo semplici" (confermato dai log della prima esecuzione
-reale della Action). Lo script usa quindi: una sessione
-`requests.Session()` persistente, un set completo di header da browser
-reale (Chrome/Windows, incluso `Sec-Fetch-*`), una visita preliminare alla
-home per acquisire eventuali cookie, `Referer` impostato sulla pagina di
-provenienza, e fino a 3 tentativi con backoff se riceve 403/429/503. Se
-dopo un run il feed risulta ancora vuoto, guarda i log dell'Action: se il
-403 persiste nonostante i ritentativi, il sito potrebbe richiedere una
-verifica più sofisticata (es. JavaScript challenge) non superabile da un
-semplice client HTTP — in quel caso l'unica strada resterebbe uno scraping
-"headless browser" (Playwright), non incluso in questa versione.
+```
+https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml
+```
+
+Questo è l'indirizzo da incollare in qualunque lettore RSS (Feedly,
+NetNewsWire, Thunderbird, ecc.). Diventa raggiungibile dopo aver completato
+i passi 1–2 qui sotto (repository + GitHub Pages attivi) e dopo la prima
+esecuzione del workflow.
+
+Il repository di riferimento è:
+[https://github.com/mbmichele/feed_prefettura_mn](https://github.com/mbmichele/feed_prefettura_mn)
+
+⚠️ **Nota tecnica**: il sito ha una protezione anti-bot che ha continuato a
+restituire 403 anche con header completi da browser, sessione persistente,
+`Referer` e ritentativi (confermato da due esecuzioni reali della Action).
+Questo escludeva un blocco basato sui soli header HTTP. Dalla v2.0.0 lo
+scraping usa quindi **Playwright (Chromium headless)**: le pagine vengono
+caricate con un browser vero, eseguendo anche eventuale JavaScript di
+verifica. Se il 403 dovesse persistere ANCHE così, il blocco è molto
+probabilmente legato alla rete/IP dei runner di GitHub Actions (molti siti
+bloccano a prescindere gli intervalli IP noti dei provider cloud): in quel
+caso l'unica strada resterebbe eseguire lo scraping da una rete non
+riconoscibile come "datacenter" (es. un servizio di proxy residenziali),
+il che esula dallo scopo di un progetto gratuito/amatoriale come questo.
 
 ## Struttura del repository
 
@@ -36,20 +46,18 @@ semplice client HTTP — in quel caso l'unica strada resterebbe uno scraping
 ├── scripts/
 │   └── generate_feed.py       # scraping + generazione RSS
 ├── docs/
-│   ├── index.html             # pagina minima per GitHub Pages
+│   ├── index.html             # pagina minima per GitHub Pages (con il link copiabile)
 │   └── feed.xml               # feed generato (committato dalla Action)
 ├── .github/workflows/
-│   └── build-feed.yml         # Action solo workflow_dispatch
+│   └── build-feed.yml         # Action con schedule interno + workflow_dispatch
 ├── requirements.txt
 └── README.md
 ```
 
 ## 1. Creazione del repository
 
-Il repository di riferimento è:
-[https://github.com/mbmichele/feed_prefettura_mn](https://github.com/mbmichele/feed_prefettura_mn)
-
-1. Crea il repository (pubblico) su GitHub con quel nome, se non esiste già.
+1. Crea il repository (pubblico) su GitHub con il nome
+   `feed_prefettura_mn`, se non esiste già.
 2. Carica tutto il contenuto di questo pacchetto nel branch `main`.
 
 ## 2. Attivazione di GitHub Pages
@@ -58,7 +66,9 @@ Il repository di riferimento è:
 2. In "Build and deployment", seleziona **Deploy from a branch**.
 3. Branch: `main`, cartella: `/ (root)`.
 4. Salva. Il feed sarà raggiungibile (dopo qualche minuto) su:
-   `https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml`
+   ```
+   https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml
+   ```
 
 ## 3. Creazione del Personal Access Token (PAT)
 
@@ -116,13 +126,14 @@ feed RSS notizie Prefettura di Mantova → Run workflow**.
 
 ```bash
 pip install -r requirements.txt
+playwright install chromium
 python scripts/generate_feed.py
 ```
 
-Lo script stampa a schermo quanti link ha trovato nella pagina di elenco e
-quanti nuovi comunicati ha scaricato; in caso di errore (pagina bloccata,
-struttura cambiata) esce con codice diverso da zero e un messaggio
-diagnostico su stderr.
+Lo script stampa a schermo quanti link ha trovato in ciascuna pagina di
+elenco e quanti nuovi comunicati ha scaricato; in caso di errore (pagina
+bloccata, struttura cambiata) esce con codice diverso da zero e un
+messaggio diagnostico su stderr.
 
 ## Limiti e disclaimer
 
@@ -197,3 +208,14 @@ prima quale sia il sito e lo schema URL realmente corretti.
   scraping ora usa una sessione persistente con header completi da
   browser, warm-up sulla home, `Referer` e ritentativi con backoff su
   403/429/503.
+- **v1.5.0**: indirizzo del feed reso più visibile e copiabile — blocco
+  codice dedicato in cima al README e campo di testo con copia-al-click in
+  `docs/index.html`.
+- **v2.0.0**: sostituito `requests` con **Playwright (Chromium headless)**
+  per lo scraping, dopo che il blocco 403 è persistito anche con header
+  completi, sessione persistente e ritentativi (visto in due esecuzioni
+  reali della Action). Aggiunto lo step "Installa Chromium (Playwright)"
+  al workflow e `playwright>=1.40` a `requirements.txt`; aggiunto anche un
+  ritentativo con `git pull --rebase` sul push, per il caso (già visto in
+  altri progetti analoghi) di esecuzioni concorrenti fra cron interno ed
+  esterno.
