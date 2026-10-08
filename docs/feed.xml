@@ -6,7 +6,14 @@
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
     <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml" rel="self" type="application/rss+xml" />
-    <lastBuildDate>Thu, 08 Oct 2026 13:01:54 +0200</lastBuildDate>
+    <lastBuildDate>Thu, 08 Oct 2026 14:02:05 +0200</lastBuildDate>
+    <item>
+      <title>Il Prefetto di Mantova riceve il magg. GdF Giovanni TORINO</title>
+      <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-mantova-riceve-magg-gdf-giovanni-torino</link>
+      <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-mantova-riceve-magg-gdf-giovanni-torino</guid>
+      <pubDate>Thu, 08 Oct 2026 00:00:00 +0200</pubDate>
+      <description>Il Prefetto della provincia di Mantova Roberto Bolognesi riceve il maggiore della Guardia di Finanza Giovanni TORINO Il Prefetto della provincia di Mantova Roberto Bolognesi ha ricevuto in visita di presentazione il maggiore della Guardia di Finanza Giovanni Torino, accompagnato dal Comandante Provinciale della Guardia di Finanza colonnello Antonello Cefalo. Il magg. Torino, ufficiale di esperienza, ha nei giorni scorsi assunto il comando del Nucleo di Polizia Economico-Finanziaria della Guardia di Finanza di Mantova, dopo aver comandato il 1° Gruppo Guardia di Finanza “Trieste”.</description>
+    </item>
     <item>
       <title>Il Prefetto incontra il Capo del Centro Operativo DIA di Brescia</title>
       <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-incontra-capo-centro-operativo-dia-brescia</link>
