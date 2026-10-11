@@ -31,21 +31,27 @@ Lo script:
      mantiene al massimo MAX_ITEMS elementi
   6. scrive docs/feed.xml (RSS 2.0 valido)
 
-NOTE IMPORTANTI PER CHI MANUTIENE QUESTO SCRIPT:
-  - Il sito ha una protezione anti-bot che ha continuato a restituire 403
-    anche con header completi da browser, sessione persistente, Referer e
-    ritentativi (confermato da due esecuzioni reali della Action, log del
-    2026-09-19 e del 2026-10-03). Questo esclude un blocco basato sui soli
-    header HTTP: per questo lo script ora usa Playwright (Chromium
-    headless) per caricare le pagine come farebbe un browser vero,
-    eseguendo anche eventuale JavaScript di verifica (vedi `fetch`,
-    `_get_browser_context`). Se il 403 dovesse persistere ANCHE con
-    Playwright, il blocco e' molto probabilmente legato alla rete/IP dei
-    runner di GitHub Actions (intervalli IP noti di provider cloud spesso
-    bloccati a prescindere dal browser usato): in quel caso l'unica strada
-    sarebbe eseguire lo scraping da una rete non riconoscibile come
-    "datacenter" (es. un servizio di proxy residenziali), il che esula
-    dallo scopo di un progetto gratuito/amatoriale come questo.
+NOTE IMPORTANTI PER CHI MANUTIENE QUESTO SCRIPT — CRONOLOGIA DEL BLOCCO
+ANTI-BOT (letta sui log reali delle esecuzioni della Action):
+  - 19/09/2026 e 03/10/2026: richieste HTTP semplici (requests, anche con
+    header completi da browser, sessione persistente, Referer e
+    ritentativi) → 403 su entrambe le pagine.
+  - 10/10/2026: passaggio a Playwright (Chromium headless reale) → 403
+    IDENTICO, con lo stesso pattern di retry falliti.
+  Conclusione: un browser vero e' stato bloccato esattamente come le
+  richieste HTTP semplici. Questo esclude un blocco basato sul
+  fingerprinting del client (header, JS, canvas, ecc.): il blocco e' quasi
+  certamente sugli INDIRIZZI IP dei runner di GitHub Actions (range noti di
+  datacenter cloud, es. Azure, spesso bloccati a prescindere da chi li usa).
+  Nessuna ulteriore modifica allo User-Agent, agli header o al tipo di
+  client puo' risolvere un blocco di questo tipo: il problema e' "da dove"
+  parte la richiesta, non "come" e' fatta. Le uniche due strade utili sono:
+    (a) eseguire il workflow su un runner self-hosted con IP residenziale
+        (un PC/Raspberry Pi proprio, sempre acceso) — vedi README;
+    (b) instradare le richieste di Playwright attraverso un proxy
+        residenziale a pagamento — vedi PROXY_SERVER qui sotto, gia'
+        predisposto ma disattivato di default (nessun costo finche' non lo
+        si configura).
   - Le classi CSS esatte del sito non sono state verificate manualmente in
     fase di sviluppo iniziale. L'estrazione e' quindi basata su pattern
     generici (tag semantici, regex sulle date in italiano) pensati per
@@ -58,6 +64,7 @@ NOTE IMPORTANTI PER CHI MANUTIENE QUESTO SCRIPT:
     `LISTING_URLS`.
 """
 
+import os
 import re
 import sys
 import time
@@ -87,6 +94,20 @@ CHANNEL_LINK = LISTING_URLS[0]
 # include "docs/").
 FEED_PUBLIC_URL = "https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml"
 
+# --- Proxy opzionale (disattivato di default) --------------------------
+# Se il blocco e' legato all'IP del runner (vedi nota in cima al file), lo
+# scraping puo' essere instradato attraverso un proxy residenziale a
+# pagamento impostando queste variabili d'ambiente nei "Secrets" del
+# repository GitHub (Settings -> Secrets and variables -> Actions):
+#   PROXY_SERVER    es. "http://geo.iproyal.com:12321"
+#   PROXY_USERNAME  (opzionale)
+#   PROXY_PASSWORD  (opzionale)
+# Se PROXY_SERVER non e' impostata, lo script si comporta esattamente come
+# prima (nessun proxy, nessun costo).
+PROXY_SERVER = os.environ.get("PROXY_SERVER", "").strip()
+PROXY_USERNAME = os.environ.get("PROXY_USERNAME", "").strip()
+PROXY_PASSWORD = os.environ.get("PROXY_PASSWORD", "").strip()
+
 # Path dei prefissi sotto cui possono trovarsi le pagine di dettaglio di un
 # comunicato. Lo stesso comunicato puo' avere lo stesso slug sotto prefissi
 # diversi (alias Drupal): la deduplica avviene sullo slug, non sull'URL.
@@ -115,13 +136,25 @@ _warmed_up = False
 
 def _get_context():
     """Avvia Playwright/Chromium al primo utilizzo e riusa lo stesso
-    browser context per tutte le richieste successive."""
+    browser context per tutte le richieste successive. Usa il proxy
+    configurato via env (se presente)."""
     global _playwright, _browser, _browser_context
     if _browser_context is not None:
         return _browser_context
 
     _playwright = sync_playwright().start()
-    _browser = _playwright.chromium.launch(headless=True)
+
+    launch_kwargs = {"headless": True}
+    if PROXY_SERVER:
+        proxy_config = {"server": PROXY_SERVER}
+        if PROXY_USERNAME:
+            proxy_config["username"] = PROXY_USERNAME
+        if PROXY_PASSWORD:
+            proxy_config["password"] = PROXY_PASSWORD
+        launch_kwargs["proxy"] = proxy_config
+        print(f"[INFO] Uso proxy configurato: {PROXY_SERVER}", file=sys.stderr)
+
+    _browser = _playwright.chromium.launch(**launch_kwargs)
     _browser_context = _browser.new_context(
         user_agent=USER_AGENT,
         locale="it-IT",
@@ -206,9 +239,9 @@ def _looks_like_bot_challenge(html: str) -> bool:
 
 def fetch(url: str, referer: str | None = None) -> BeautifulSoup | None:
     """Carica una pagina con un browser headless reale (Playwright/
-    Chromium) invece di una semplice richiesta HTTP: il sito ha continuato
-    a rispondere 403 anche con header completi e sessione persistente, il
-    che indica una verifica piu' sofisticata di un controllo sugli header."""
+    Chromium). NOTA: nei log osservati, il blocco 403 persiste anche cosi'
+    quando eseguito dai runner GitHub-hosted (vedi nota in cima al file) —
+    se PROXY_SERVER e' configurato, le richieste passano dal proxy."""
     _warm_up()
     context = _get_context()
 
@@ -377,8 +410,6 @@ def load_existing_items(path: str) -> dict:
     """Rilegge docs/feed.xml esistente (se presente) per non ri-scaricare
     le pagine di dettaglio di comunicati gia' noti e per preservare la
     cronologia dei comunicati non piu' in prima pagina."""
-    import os
-
     if not os.path.exists(path):
         return {}
 
@@ -520,7 +551,6 @@ def _main():
 
     rss_xml = build_rss(items)
 
-    import os
     os.makedirs("docs", exist_ok=True)
     with open(FEED_PATH, "w", encoding="utf-8") as f:
         f.write(rss_xml)

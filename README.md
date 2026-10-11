@@ -21,30 +21,97 @@ https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml
 Questo è l'indirizzo da incollare in qualunque lettore RSS (Feedly,
 NetNewsWire, Thunderbird, ecc.). Diventa raggiungibile dopo aver completato
 i passi 1–2 qui sotto (repository + GitHub Pages attivi) e dopo la prima
-esecuzione del workflow.
+esecuzione **riuscita** del workflow — vedi però la sezione sul blocco
+anti-bot qui sotto, perché finora le esecuzioni reali non sono riuscite a
+leggere il sito sorgente.
 
 Il repository di riferimento è:
 [https://github.com/mbmichele/feed_prefettura_mn](https://github.com/mbmichele/feed_prefettura_mn)
 
-⚠️ **Nota tecnica**: il sito ha una protezione anti-bot che ha continuato a
-restituire 403 anche con header completi da browser, sessione persistente,
-`Referer` e ritentativi (confermato da due esecuzioni reali della Action).
-Questo escludeva un blocco basato sui soli header HTTP. Dalla v2.0.0 lo
-scraping usa quindi **Playwright (Chromium headless)**: le pagine vengono
-caricate con un browser vero, eseguendo anche eventuale JavaScript di
-verifica. Se il 403 dovesse persistere ANCHE così, il blocco è molto
-probabilmente legato alla rete/IP dei runner di GitHub Actions (molti siti
-bloccano a prescindere gli intervalli IP noti dei provider cloud): in quel
-caso l'unica strada resterebbe eseguire lo scraping da una rete non
-riconoscibile come "datacenter" (es. un servizio di proxy residenziali),
-il che esula dallo scopo di un progetto gratuito/amatoriale come questo.
+## ⚠️ Stato attuale: il sito blocca i runner di GitHub Actions
+
+Tre esecuzioni reali del workflow (19 settembre, 3 ottobre e 10 ottobre
+2026) hanno ricevuto **403** dal sito su entrambe le pagine, nonostante
+tentativi progressivamente più sofisticati:
+
+1. Richieste HTTP semplici (`requests`) → 403.
+2. Richieste con header completi da browser, sessione persistente,
+   `Referer` e ritentativi con backoff → 403 identico.
+3. **Browser reale** (Playwright + Chromium headless) → **403 identico**.
+
+Il punto 3 è quello decisivo: un browser vero, indistinguibile da un
+normale utente dal punto di vista del fingerprinting (header, JavaScript,
+cookie), è stato bloccato esattamente come le richieste HTTP più semplici.
+Questo esclude un blocco basato su "come" la richiesta si presenta, e
+punta quasi certamente a un blocco sugli **indirizzi IP dei runner
+GitHub-hosted** (range noti di datacenter cloud, spesso bloccati a
+prescindere da chi li usa, indipendentemente dal client).
+
+**Nessuna ulteriore modifica allo script può risolvere questo da sola.**
+Il codice (`scripts/generate_feed.py`) è già predisposto per le due uniche
+vie utili, entrambe disattivate di default (nessun costo, nessun
+comportamento diverso finché non le attivi):
+
+### Opzione A — Runner self-hosted (gratuita, richiede una tua macchina)
+
+Fai girare il workflow su un tuo computer o server sempre acceso, con un
+indirizzo IP residenziale/non-datacenter (es. un Raspberry Pi, un mini-PC,
+o un server di casa):
+
+1. Nel repository GitHub: **Settings → Actions → Runners → New self-hosted
+   runner**, scegli il sistema operativo della tua macchina e segui le
+   istruzioni per installare e registrare il runner (scarica un pacchetto,
+   lo esegui con un token fornito da GitHub).
+2. Lascia il runner in esecuzione come servizio (le istruzioni di GitHub
+   includono un comando `run.sh` da poter installare come servizio
+   systemd su Linux).
+3. In `.github/workflows/build-feed.yml`, cambia:
+   ```yaml
+   runs-on: ubuntu-latest
+   ```
+   in:
+   ```yaml
+   runs-on: self-hosted
+   ```
+4. Da quel momento il workflow (sia per lo schedule interno sia per il
+   cronjob esterno) gira sulla tua macchina, con il tuo IP: se il blocco è
+   davvero sui range IP dei datacenter cloud, dovrebbe sparire.
+
+Limite: la tua macchina deve restare accesa e raggiungibile per far
+scattare lo schedule orario.
+
+### Opzione B — Proxy residenziale a pagamento
+
+Se non hai una macchina sempre accesa, puoi instradare le richieste di
+Playwright attraverso un servizio di proxy residenziali (es. Bright Data,
+Smartproxy, IPRoyal e simili — hanno un costo mensile o a consumo).
+
+1. Sottoscrivi un servizio di proxy residenziali e ottieni le credenziali
+   (indirizzo del proxy, utente, password).
+2. Nel repository GitHub: **Settings → Secrets and variables → Actions →
+   New repository secret**, crea:
+   - `PROXY_SERVER` (es. `http://geo.iproyal.com:12321`)
+   - `PROXY_USERNAME` (se richiesto dal servizio)
+   - `PROXY_PASSWORD` (se richiesto dal servizio)
+3. Non serve modificare altro: lo script (`scripts/generate_feed.py`) e il
+   workflow (`build-feed.yml`) leggono già queste variabili e, se presenti,
+   le passano a Playwright; se assenti, continuano a funzionare come ora
+   (senza proxy, senza costi).
+
+### Se non fai nulla
+
+Il workflow continuerà a fallire con 403 come nei log osservati finora. Il
+feed resterà quello dell'ultima esecuzione riuscita (se mai ce ne sarà
+una) o il placeholder vuoto iniziale. Nessun danno: il workflow fa commit
+solo quando il feed cambia, quindi un run fallito non sporca la cronologia
+del repository.
 
 ## Struttura del repository
 
 ```
 .
 ├── scripts/
-│   └── generate_feed.py       # scraping + generazione RSS
+│   └── generate_feed.py       # scraping (Playwright) + generazione RSS
 ├── docs/
 │   ├── index.html             # pagina minima per GitHub Pages (con il link copiabile)
 │   └── feed.xml               # feed generato (committato dalla Action)
@@ -115,7 +182,9 @@ Per configurare anche il cron esterno, su
 - **Frequenza**: ogni ora (o come preferisci).
 
 Qualunque sia l'innesco (interno o esterno), il workflow rigenera
-`docs/feed.xml` e fa commit solo se il contenuto è effettivamente cambiato.
+`docs/feed.xml` e fa commit solo se il contenuto è effettivamente cambiato
+— sempre che riesca a leggere il sito sorgente (vedi sezione sul blocco
+anti-bot sopra).
 
 ## 5. Esecuzione manuale (facoltativa)
 
@@ -129,6 +198,11 @@ pip install -r requirements.txt
 playwright install chromium
 python scripts/generate_feed.py
 ```
+
+Eseguito dal tuo computer di casa (non da un runner cloud), questo comando
+è anche il modo più rapido per verificare se il blocco è davvero legato
+all'IP dei datacenter: se in locale funziona e sui runner GitHub-hosted no,
+la diagnosi è confermata.
 
 Lo script stampa a schermo quanti link ha trovato in ciascuna pagina di
 elenco e quanti nuovi comunicati ha scaricato; in caso di errore (pagina
@@ -203,11 +277,11 @@ prima quale sia il sito e lo schema URL realmente corretti.
   `https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml` (GitHub
   Pages pubblica dalla root del branch `main`, non dalla cartella `/docs`
   come sorgente — per questo il path include `docs/`).
-- **v1.4.0**: risolto il blocco 403 osservato nella prima esecuzione reale
-  della Action (log: `Status 403` su entrambe le pagine di elenco). Lo
-  scraping ora usa una sessione persistente con header completi da
-  browser, warm-up sulla home, `Referer` e ritentativi con backoff su
-  403/429/503.
+- **v1.4.0**: risolto (apparentemente) il blocco 403 osservato nella prima
+  esecuzione reale della Action. Lo scraping ora usa una sessione
+  persistente con header completi da browser, warm-up sulla home,
+  `Referer` e ritentativi con backoff su 403/429/503. **Rivelatosi
+  insufficiente** — vedi v2.0.0.
 - **v1.5.0**: indirizzo del feed reso più visibile e copiabile — blocco
   codice dedicato in cima al README e campo di testo con copia-al-click in
   `docs/index.html`.
@@ -216,6 +290,14 @@ prima quale sia il sito e lo schema URL realmente corretti.
   completi, sessione persistente e ritentativi (visto in due esecuzioni
   reali della Action). Aggiunto lo step "Installa Chromium (Playwright)"
   al workflow e `playwright>=1.40` a `requirements.txt`; aggiunto anche un
-  ritentativo con `git pull --rebase` sul push, per il caso (già visto in
-  altri progetti analoghi) di esecuzioni concorrenti fra cron interno ed
-  esterno.
+  ritentativo con `git pull --rebase` sul push, per il caso di esecuzioni
+  concorrenti fra cron interno ed esterno.
+- **v2.1.0**: confermato (log del 10/10/2026) che il blocco persiste
+  **anche** con Playwright/Chromium headless reale — stesso 403 di prima,
+  nonostante un browser vero. Questo esclude il fingerprinting del client
+  e punta a un blocco sull'IP dei runner GitHub-hosted. Aggiunto supporto
+  opzionale (disattivato di default) a un proxy residenziale via i Secrets
+  `PROXY_SERVER` / `PROXY_USERNAME` / `PROXY_PASSWORD`, e documentata
+  l'alternativa del runner self-hosted (vedi sezione "Stato attuale" sopra).
+  Nessuna ulteriore modifica allo User-Agent/header avrebbe effetto: il
+  problema è di rete, non di fingerprinting.

@@ -11,6 +11,19 @@ name: Rigenera feed RSS notizie Prefettura di Mantova
 # NB: gli schedule di GitHub Actions non sono garantiti al minuto esatto
 # (possono slittare di qualche minuto nei momenti di carico); il cron
 # esterno resta utile come innesco aggiuntivo/di backup più puntuale.
+#
+# IMPORTANTE — blocco anti-bot del sito sorgente: le esecuzioni reali di
+# questo workflow (19/09, 03/10, 10/10/2026) hanno sempre ricevuto 403 dal
+# sito, anche con Playwright/Chromium headless reale. Tutto indica un
+# blocco sull'IP dei runner GitHub-hosted, non sul client usato (vedi nota
+# dettagliata in cima a scripts/generate_feed.py). Due vie per aggirarlo,
+# nessuna delle due attiva di default:
+#   (a) "runs-on: self-hosted" qui sotto, puntando a un runner self-hosted
+#       con IP residenziale (vedi README, sezione "Runner self-hosted");
+#   (b) impostare i Secrets PROXY_SERVER / PROXY_USERNAME / PROXY_PASSWORD
+#       (Settings -> Secrets and variables -> Actions) per instradare lo
+#       scraping attraverso un proxy residenziale a pagamento — lo script
+#       li usa automaticamente se presenti, altrimenti li ignora.
 on:
   schedule:
     - cron: "0 * * * *"  # ogni ora, al minuto 0 (UTC)
@@ -25,6 +38,8 @@ concurrency:
 
 jobs:
   build:
+    # Per usare un runner self-hosted con IP residenziale, sostituisci con:
+    #   runs-on: self-hosted
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -42,6 +57,13 @@ jobs:
         run: playwright install --with-deps chromium
 
       - name: Genera il feed
+        env:
+          # Variabili opzionali: se i Secrets non sono impostati nel repo,
+          # restano vuote e lo script funziona esattamente come senza
+          # proxy (nessun costo, nessun comportamento diverso).
+          PROXY_SERVER: ${{ secrets.PROXY_SERVER }}
+          PROXY_USERNAME: ${{ secrets.PROXY_USERNAME }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
         run: python scripts/generate_feed.py
 
       - name: Commit e push solo se il feed è cambiato
