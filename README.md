@@ -19,38 +19,38 @@ https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml
 ```
 
 Questo è l'indirizzo da incollare in qualunque lettore RSS (Feedly,
-NetNewsWire, Thunderbird, ecc.). Diventa raggiungibile dopo aver completato
-i passi 1–2 qui sotto (repository + GitHub Pages attivi) e dopo la prima
-esecuzione **riuscita** del workflow — vedi però la sezione sul blocco
-anti-bot qui sotto, perché finora le esecuzioni reali non sono riuscite a
-leggere il sito sorgente.
+NetNewsWire, Thunderbird, ecc.). È raggiungibile dopo aver completato i
+passi 1–2 qui sotto (repository + GitHub Pages attivi) e dopo la prima
+esecuzione riuscita del workflow. Il feed è attivo e si aggiorna
+regolarmente — vedi comunque la sezione sotto sul blocco anti-bot
+occasionale del sito sorgente, già gestito automaticamente dal workflow.
 
 Il repository di riferimento è:
 [https://github.com/mbmichele/feed_prefettura_mn](https://github.com/mbmichele/feed_prefettura_mn)
 
-## ⚠️ Stato attuale: il sito blocca i runner di GitHub Actions
+## ℹ️ Stato attuale: blocco anti-bot occasionale, già gestito
 
-Tre esecuzioni reali del workflow (19 settembre, 3 ottobre e 10 ottobre
-2026) hanno ricevuto **403** dal sito su entrambe le pagine, nonostante
-tentativi progressivamente più sofisticati:
+Durante lo sviluppo, tre esecuzioni reali del workflow (19 settembre, 3
+ottobre e 10 ottobre 2026) avevano ricevuto **403** dal sito su entrambe
+le pagine, anche con un browser reale (Playwright + Chromium headless),
+facendo pensare a un blocco sugli indirizzi IP dei runner GitHub-hosted
+(datacenter cloud).
 
-1. Richieste HTTP semplici (`requests`) → 403.
-2. Richieste con header completi da browser, sessione persistente,
-   `Referer` e ritentativi con backoff → 403 identico.
-3. **Browser reale** (Playwright + Chromium headless) → **403 identico**.
+**Monitoraggio successivo (controllo del 16/10/2026):** su un campione
+delle ultime 100 esecuzioni del workflow, **99 sono andate a buon fine** e
+il feed si aggiorna regolarmente con contenuti reali. È stata trovata
+**una sola esecuzione fallita** (13/10/2026), con lo stesso pattern 403
+osservato in precedenza, risolta automaticamente dall'esecuzione
+successiva un'ora dopo, senza alcun intervento manuale. Il blocco quindi
+non è (più, o non era) sistematico, ma **occasionale/intermittente**, ed è
+già gestito correttamente dal comportamento esistente dello script:
+ritentativi con backoff e commit solo in caso di successo (un run fallito
+non scrive mai un feed vuoto o corrotto).
 
-Il punto 3 è quello decisivo: un browser vero, indistinguibile da un
-normale utente dal punto di vista del fingerprinting (header, JavaScript,
-cookie), è stato bloccato esattamente come le richieste HTTP più semplici.
-Questo esclude un blocco basato su "come" la richiesta si presenta, e
-punta quasi certamente a un blocco sugli **indirizzi IP dei runner
-GitHub-hosted** (range noti di datacenter cloud, spesso bloccati a
-prescindere da chi li usa, indipendentemente dal client).
-
-**Nessuna ulteriore modifica allo script può risolvere questo da sola.**
-Il codice (`scripts/generate_feed.py`) è già predisposto per le due uniche
-vie utili, entrambe disattivate di default (nessun costo, nessun
-comportamento diverso finché non le attivi):
+Se in futuro il blocco dovesse tornare a essere sistematico, il codice
+(`scripts/generate_feed.py`) resta comunque predisposto per le due vie
+utili elencate sotto, entrambe disattivate di default (nessun costo,
+nessun comportamento diverso finché non le attivi):
 
 ### Opzione A — Runner self-hosted (gratuita, richiede una tua macchina)
 
@@ -100,11 +100,12 @@ Smartproxy, IPRoyal e simili — hanno un costo mensile o a consumo).
 
 ### Se non fai nulla
 
-Il workflow continuerà a fallire con 403 come nei log osservati finora. Il
-feed resterà quello dell'ultima esecuzione riuscita (se mai ce ne sarà
-una) o il placeholder vuoto iniziale. Nessun danno: il workflow fa commit
-solo quando il feed cambia, quindi un run fallito non sporca la cronologia
-del repository.
+Non serve fare nulla per ora: il workflow funziona nella quasi totalità
+delle esecuzioni (vedi sopra). Nei rari casi in cui un'esecuzione riceve
+403, il feed resta semplicemente quello dell'ultima esecuzione riuscita —
+nessun danno, perché il workflow fa commit solo quando il feed cambia e
+solo in caso di successo, quindi un run fallito non sporca mai la
+cronologia del repository né pubblica un feed vuoto o corrotto.
 
 ## Struttura del repository
 
@@ -301,3 +302,10 @@ prima quale sia il sito e lo schema URL realmente corretti.
   l'alternativa del runner self-hosted (vedi sezione "Stato attuale" sopra).
   Nessuna ulteriore modifica allo User-Agent/header avrebbe effetto: il
   problema è di rete, non di fingerprinting.
+- **v2.2.0**: controllo dello storico reale delle esecuzioni su GitHub
+  (16/10/2026): su 100 run recenti, 99 riuscite e una sola fallita (poi
+  autorisolta al run successivo), a conferma che il blocco IP è
+  occasionale e già gestito correttamente dal meccanismo esistente di
+  ritentativi + commit-solo-su-successo. Nessuna modifica al codice:
+  aggiornata solo la sezione "Stato attuale" del README, che descriveva
+  un blocco sistematico ormai superato dai fatti.
