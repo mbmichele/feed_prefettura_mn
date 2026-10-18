@@ -5,8 +5,8 @@
     <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie</link>
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
-    <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml" rel="self" type="application/rss+xml" />
-    <lastBuildDate>Sun, 18 Oct 2026 16:24:39 +0200</lastBuildDate>
+    <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/feed.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 18 Oct 2026 17:02:07 +0200</lastBuildDate>
     <item>
       <title>Il Prefetto di Mantova riceve il dirigente della Soprintendenza</title>
       <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-mantova-riceve-dirigente-soprintendenza</link>
@@ -76,6 +76,20 @@
       <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-provincia-mantova-incontra-i-dirigenti-scolastici</guid>
       <pubDate>Fri, 11 Sep 2026 00:00:00 +0200</pubDate>
       <description>Il Prefetto della provincia di Mantova incontra i dirigenti scolastici: “Auguri per un anno scolastico ricco di crescita e successi” Nella mattinata odierna il Prefetto della provincia di Mantova dott. Roberto Bolognesi, accompagnato dal Dirigente dell’Ufficio Scolastico Territoriale dott. Daniele Zani, ha incontrato i dirigenti delle istituzioni scolastiche statali del territorio presso l’Istituto Superiore “Bonomi Mazzolari”. Nella circostanza, il Prefetto, dopo essere stato accolto dal Dirigente Scolastico prof. Roberto Capuzzo ha espresso il proprio apprezzamento per l’impegno quotidian...</description>
+    </item>
+    <item>
+      <title>AVVISO PUBBLICO ESPLORATIVO MANIFESTAZIONE INTERESSE AFFIDAMENTO DIRETTO</title>
+      <link>https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni/avviso-pubblico-esplorativo-manifestazione-interesse-affidamento-diretto</link>
+      <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni/avviso-pubblico-esplorativo-manifestazione-interesse-affidamento-diretto</guid>
+      <pubDate>Fri, 19 Jun 2026 00:00:00 +0200</pubDate>
+      <description>AVVISO PUBBLICO ESPLORATIVO PER LA MANIFESTAZIONE D’INTERESSE ALL’AFFIDAMENTO DIRETTO, AI SENSI DELL’ART. 50 COMMA 1 DEL D. LGS. 36/2023, DEL SERVIZIO DI TRASPORTO CON CONDUCENTE DI CITTADINI STRANIERI RICHIEDENTI PROTEZIONE INTERNAZIONALE, DAL CENTRO C.R.I. DI MILANO-BRESSO ALLE STRUTTURE DI ACCOGLIENZA UBICATE NEL TERRITORIO DELLA PROVINCIA DI MANTOVA, PER LA DURATA DI UN ANNO DALLA DATA DI SOTTOSCRIZIONE DELLA CONVENZIONE p. IL PREFETTO IL VICE PREFETTO VICARIO Spezzaferri</description>
+    </item>
+    <item>
+      <title>AVVISO SEDUTA PUBBLICA COMMISSIONE DI GARA PROCEDURA APERTA</title>
+      <link>https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni/avviso-seduta-pubblica-commissione-gara-procedura-aperta</link>
+      <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni/avviso-seduta-pubblica-commissione-gara-procedura-aperta</guid>
+      <pubDate>Fri, 30 Jan 2026 00:00:00 +0100</pubDate>
+      <description>AVVISO SEDUTA PUBBLICA COMMISSIONE DI GARA PROCEDURA APERTA PER L'AFFIDAMENTO DEL SERVIZIO DI RECUPERO, CUSTODIA ED ACQUISTO DEI VEICOLI OGGETTO DEI PROVVEDIMENTI DI SEQUESTRO AMMINISTRATIVO, FERMO O CONFISCA AI SENSI DELL'ARTICOLO 214 bis DEL D. LGS. 285/1992, PER L'AMBITO TERRITORIALE DI MANTOVA CIG B8BCAS1F15 Si avvisa che la Commissione Giudicatrice si riunirà per la seconda seduta pubblica telematica il giorno lunedì 2 febbraio 2026 alle ore 10:00</description>
     </item>
   </channel>
 </rss>
