@@ -4,10 +4,11 @@ Genera un feed RSS 2.0 non ufficiale a partire da due pagine pubbliche del
 sito della Prefettura di Mantova:
 
 - https://prefettura.interno.gov.it/it/prefetture/mantova/notizie
-- https://prefettura.interno.gov.it/it/prefetture/mantova/evidenza/comunicati-stampa
+- https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni
 
 Le pagine di dettaglio sono state osservate sotto due prefissi diversi
-(`.../notizie/<slug>` e `.../comunicati-stampa/<slug>`); lo stesso
+(`.../notizie/<slug>`, `.../comunicazioni/<slug>` e, per i comunicati
+storici, `.../comunicati-stampa/<slug>`); lo stesso
 comunicato può comparire con lo stesso slug sotto entrambi i prefissi
 (alias interni del sito), quindi lo script deduplica per slug e non per URL
 esatto, per evitare doppioni nel feed.
@@ -309,3 +310,13 @@ prima quale sia il sito e lo schema URL realmente corretti.
   ritentativi + commit-solo-su-successo. Nessuna modifica al codice:
   aggiornata solo la sezione "Stato attuale" del README, che descriveva
   un blocco sistematico ormai superato dai fatti.
+- **v2.3.0**: la seconda fonte non è più
+  `.../evidenza/comunicati-stampa` ma
+  `https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni`.
+  Le fonti attuali sono quindi `notizie` e `comunicazioni`
+  (`LISTING_URLS` in `scripts/generate_feed.py`). `DETAIL_PATH_RE` ora
+  riconosce anche `/comunicazioni/<slug>` (mantenendo
+  `/comunicati-stampa/<slug>` per non perdere né duplicare gli elementi già
+  presenti nel feed). Se i link di dettaglio della pagina `comunicazioni`
+  usassero un prefisso diverso, lo script lo segnala su stderr: basta
+  aggiungerlo a `DETAIL_PATH_RE`.

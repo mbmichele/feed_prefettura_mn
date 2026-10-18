@@ -4,13 +4,15 @@ Genera un feed RSS non ufficiale a partire da due pagine di elenco del sito
 della Prefettura di Mantova:
 
     https://prefettura.interno.gov.it/it/prefetture/mantova/notizie
-    https://prefettura.interno.gov.it/it/prefetture/mantova/evidenza/comunicati-stampa
+    https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni
 
 Il sito e' un portale Drupal (schema "Designers Italia") con URL puliti.
 Le pagine di dettaglio sono state osservate sotto DUE prefissi diversi:
 
     https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/<slug>
-    https://prefettura.interno.gov.it/it/prefetture/mantova/comunicati-stampa/<slug>
+    https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni/<slug>
+    (e, per i comunicati gia' presenti nel feed, il vecchio prefisso
+    .../comunicati-stampa/<slug>)
 
 IMPORTANTE: lo stesso comunicato puo' essere raggiungibile con lo stesso
 <slug> sotto entrambi i prefissi (alias Drupal). Per questo la deduplica non
@@ -21,7 +23,7 @@ Lo script:
   1. scarica entrambe le pagine di elenco
   2. individua ogni comunicato tramite i link che puntano al dettaglio
      (path che termina con "/notizie/<slug>" oppure
-     "/comunicati-stampa/<slug>")
+     "/comunicazioni/<slug>", oppure il vecchio "/comunicati-stampa/<slug>")
   3. deduplica i candidati per slug (tenendo il primo URL incontrato)
   4. per ogni slug nuovo (non gia' presente nel feed esistente) scarica la
      pagina di dettaglio per estrarre titolo, data e descrizione con
@@ -60,7 +62,7 @@ ANTI-BOT (letta sui log reali delle esecuzioni della Action):
     `extract_title_from_detail`, `extract_date_from_detail` e
     `extract_description_from_detail`: sono i punti da aggiustare.
   - Se in futuro comparisse un terzo prefisso di dettaglio (oltre a
-    "notizie" e "comunicati-stampa"), aggiungilo a `DETAIL_PATH_RE` e a
+    "notizie" e "comunicazioni"), aggiungilo a `DETAIL_PATH_RE` e a
     `LISTING_URLS`.
 """
 
@@ -85,7 +87,7 @@ except Exception:  # pragma: no cover
 
 LISTING_URLS = [
     "https://prefettura.interno.gov.it/it/prefetture/mantova/notizie",
-    "https://prefettura.interno.gov.it/it/prefetture/mantova/evidenza/comunicati-stampa",
+    "https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni",
 ]
 BASE_URL = "https://prefettura.interno.gov.it"
 CHANNEL_LINK = LISTING_URLS[0]
@@ -111,7 +113,7 @@ PROXY_PASSWORD = os.environ.get("PROXY_PASSWORD", "").strip()
 # Path dei prefissi sotto cui possono trovarsi le pagine di dettaglio di un
 # comunicato. Lo stesso comunicato puo' avere lo stesso slug sotto prefissi
 # diversi (alias Drupal): la deduplica avviene sullo slug, non sull'URL.
-DETAIL_PATH_RE = re.compile(r"/(?:notizie|comunicati-stampa)/([^/?#]+?)/?$")
+DETAIL_PATH_RE = re.compile(r"/(?:notizie|comunicazioni|comunicati-stampa)/([^/?#]+?)/?$")
 FEED_PATH = "docs/feed.xml"
 MAX_ITEMS = 60
 REQUEST_TIMEOUT = 25
@@ -320,7 +322,7 @@ def extract_slug(url: str):
 
 def find_detail_links(listing_soup: BeautifulSoup) -> list[str]:
     """Trova i link di dettaglio in una pagina di elenco (notizie o
-    comunicati-stampa), escludendo le pagine di elenco stesse."""
+    comunicazioni), escludendo le pagine di elenco stesse."""
     listing_urls_normalized = {u.rstrip("/") for u in LISTING_URLS}
     links = []
     seen = set()
