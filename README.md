@@ -1,10 +1,11 @@
 # Feed RSS non ufficiale — Notizie e comunicati stampa Prefettura di Mantova
 
-Genera un feed RSS 2.0 non ufficiale a partire da due pagine pubbliche del
+Genera un feed RSS 2.0 non ufficiale a partire da tre pagine pubbliche del
 sito della Prefettura di Mantova:
 
 - https://prefettura.interno.gov.it/it/prefetture/mantova/notizie
 - https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni
+- https://prefettura.interno.gov.it/it/prefetture/mantova/evidenza/comunicati-stampa
 
 Le pagine di dettaglio sono state osservate sotto due prefissi diversi
 (`.../notizie/<slug>`, `.../comunicazioni/<slug>` e, per i comunicati
@@ -320,3 +321,9 @@ prima quale sia il sito e lo schema URL realmente corretti.
   presenti nel feed). Se i link di dettaglio della pagina `comunicazioni`
   usassero un prefisso diverso, lo script lo segnala su stderr: basta
   aggiungerlo a `DETAIL_PATH_RE`.
+- **v2.4.0**: aggiunta di nuovo, come terza fonte, la pagina
+  `https://prefettura.interno.gov.it/it/prefetture/mantova/evidenza/comunicati-stampa`.
+  Le fonti attuali sono `notizie`, `comunicazioni` e
+  `evidenza/comunicati-stampa` (`LISTING_URLS` in
+  `scripts/generate_feed.py`); la deduplica per slug evita doppioni se lo
+  stesso comunicato compare in più pagine.

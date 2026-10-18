@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-Genera un feed RSS non ufficiale a partire da due pagine di elenco del sito
+Genera un feed RSS non ufficiale a partire da tre pagine di elenco del sito
 della Prefettura di Mantova:
 
     https://prefettura.interno.gov.it/it/prefetture/mantova/notizie
     https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni
+    https://prefettura.interno.gov.it/it/prefetture/mantova/evidenza/comunicati-stampa
 
 Il sito e' un portale Drupal (schema "Designers Italia") con URL puliti.
 Le pagine di dettaglio sono state osservate sotto DUE prefissi diversi:
@@ -20,7 +21,7 @@ avviene per URL esatto ma per <slug> (vedi `extract_slug`), cosi' da non
 pubblicare due volte lo stesso comunicato nel feed.
 
 Lo script:
-  1. scarica entrambe le pagine di elenco
+  1. scarica tutte le pagine di elenco
   2. individua ogni comunicato tramite i link che puntano al dettaglio
      (path che termina con "/notizie/<slug>" oppure
      "/comunicazioni/<slug>", oppure il vecchio "/comunicati-stampa/<slug>")
@@ -88,6 +89,7 @@ except Exception:  # pragma: no cover
 LISTING_URLS = [
     "https://prefettura.interno.gov.it/it/prefetture/mantova/notizie",
     "https://prefettura.interno.gov.it/it/prefetture/mantova/comunicazioni",
+    "https://prefettura.interno.gov.it/it/prefetture/mantova/evidenza/comunicati-stampa",
 ]
 BASE_URL = "https://prefettura.interno.gov.it"
 CHANNEL_LINK = LISTING_URLS[0]
