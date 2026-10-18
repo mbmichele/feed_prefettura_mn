@@ -17,7 +17,7 @@ esatto, per evitare doppioni nel feed.
 ## 📡 Indirizzo del feed RSS
 
 ```
-https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml
+https://mbmichele.github.io/feed_prefettura_mn/feed.xml
 ```
 
 Questo è l'indirizzo da incollare in qualunque lettore RSS (Feedly,
@@ -134,10 +134,10 @@ cronologia del repository né pubblica un feed vuoto o corrotto.
 
 1. Vai su **Settings → Pages**.
 2. In "Build and deployment", seleziona **Deploy from a branch**.
-3. Branch: `main`, cartella: `/ (root)`.
+3. Branch: `main`, cartella: **`/docs`**.
 4. Salva. Il feed sarà raggiungibile (dopo qualche minuto) su:
    ```
-   https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml
+   https://mbmichele.github.io/feed_prefettura_mn/feed.xml
    ```
 
 ## 3. Creazione del Personal Access Token (PAT)
@@ -276,7 +276,8 @@ prima quale sia il sito e lo schema URL realmente corretti.
 - **v1.2.0**: il workflow ora ha **sia** uno schedule interno di GitHub
   Actions (ogni ora) **sia** il trigger `workflow_dispatch` per il cron
   esterno — non più solo quest'ultimo.
-- **v1.3.0**: corretto l'indirizzo pubblico del feed:
+- **v1.3.0**: corretto l'indirizzo pubblico del feed (poi di nuovo
+  corretto in v2.4.1, vedi sotto):
   `https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml` (GitHub
   Pages pubblica dalla root del branch `main`, non dalla cartella `/docs`
   come sorgente — per questo il path include `docs/`).
@@ -327,3 +328,8 @@ prima quale sia il sito e lo schema URL realmente corretti.
   `evidenza/comunicati-stampa` (`LISTING_URLS` in
   `scripts/generate_feed.py`); la deduplica per slug evita doppioni se lo
   stesso comunicato compare in più pagine.
+- **v2.4.1**: corretto l'indirizzo pubblico del feed, che è
+  `https://mbmichele.github.io/feed_prefettura_mn/feed.xml`. GitHub Pages
+  pubblica dal branch `main`, cartella `/docs`, quindi `docs/` non compare
+  nell'URL. Aggiornati README (indirizzo e impostazione di Pages),
+  `docs/index.html` e `FEED_PUBLIC_URL` in `scripts/generate_feed.py`.

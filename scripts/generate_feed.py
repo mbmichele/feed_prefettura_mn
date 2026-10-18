@@ -96,7 +96,7 @@ CHANNEL_LINK = LISTING_URLS[0]
 # URL pubblico del feed generato (GitHub Pages pubblica dalla root del
 # branch main, non dalla cartella /docs come sorgente: per questo il path
 # include "docs/").
-FEED_PUBLIC_URL = "https://mbmichele.github.io/feed_prefettura_mn/docs/feed.xml"
+FEED_PUBLIC_URL = "https://mbmichele.github.io/feed_prefettura_mn/feed.xml"
 
 # --- Proxy opzionale (disattivato di default) --------------------------
 # Se il blocco e' legato all'IP del runner (vedi nota in cima al file), lo
