@@ -6,7 +6,14 @@
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
     <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/feed.xml" rel="self" type="application/rss+xml" />
-    <lastBuildDate>Mon, 19 Oct 2026 14:02:01 +0200</lastBuildDate>
+    <lastBuildDate>Mon, 19 Oct 2026 15:02:04 +0200</lastBuildDate>
+    <item>
+      <title>Il Prefetto incontra i neo diciottenni del Comune di Piubega</title>
+      <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-incontra-i-neo-diciottenni-comune-piubega</link>
+      <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-incontra-i-neo-diciottenni-comune-piubega</guid>
+      <pubDate>Mon, 19 Oct 2026 00:00:00 +0200</pubDate>
+      <description>Il Prefetto incontra i neo diciottenni del Comune di Piubega In un clima di grande partecipazione ed interesse, si è svolta domenica 18 ottobre scorso, nel Comune di Piubega, la cerimonia di consegna di una copia della Costituzione della Repubblica Italiana ai neodiciottenni. Alla presenza del Prefetto della provincia di Mantova dott. Roberto Bolognesi, del Sindaco del Comune di Piubega Maria Cristina Zinetti e delle altre autorità cittadine, i ragazzi che hanno compiuto i diciotto anni e che eserciteranno, pertanto, per la prima volta l’elettorato attivo e passivo, hanno ricevuto in dono u...</description>
+    </item>
     <item>
       <title>Il Prefetto di Mantova riceve il dirigente della Soprintendenza</title>
       <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-mantova-riceve-dirigente-soprintendenza</link>
