@@ -6,7 +6,14 @@
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
     <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/feed.xml" rel="self" type="application/rss+xml" />
-    <lastBuildDate>Wed, 21 Oct 2026 10:01:59 +0200</lastBuildDate>
+    <lastBuildDate>Wed, 21 Oct 2026 11:02:12 +0200</lastBuildDate>
+    <item>
+      <title>Mantova–Cremonese: divieto vendita tagliandi ai residenti di Cremona</title>
+      <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/mantova-cremonese-divieto-vendita-tagliandi-residenti-cremona</link>
+      <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/mantova-cremonese-divieto-vendita-tagliandi-residenti-cremona</guid>
+      <pubDate>Wed, 21 Oct 2026 00:00:00 +0200</pubDate>
+      <description>Incontro di calcio Mantova 1911 – U.S. Cremonese: adottato dal Prefetto il divieto di vendita dei tagliandi per i residenti nella provincia di Cremona Nella giornata odierna è stato adottato dal Prefetto della provincia di Mantova dott. Roberto Bolognesi il provvedimento di divieto di vendita ai residenti nella provincia di Cremona dei biglietti per la partita di calcio Mantova 1911 – U.S. Cremonese, in programma martedì 27 ottobre 2026 alle ore 20.00, presso lo stadio “Danilo Martelli” di Mantova, in considerazione delle valutazioni formulate dal Comitato di Analisi per la Sicurezza nelle...</description>
+    </item>
     <item>
       <title>Il Prefetto incontra i neo diciottenni del Comune di Piubega</title>
       <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-incontra-i-neo-diciottenni-comune-piubega</link>
