@@ -333,3 +333,13 @@ prima quale sia il sito e lo schema URL realmente corretti.
   pubblica dal branch `main`, cartella `/docs`, quindi `docs/` non compare
   nell'URL. Aggiornati README (indirizzo e impostazione di Pages),
   `docs/index.html` e `FEED_PUBLIC_URL` in `scripts/generate_feed.py`.
+- **v2.4.2**: corretti i due tipi di errore visti nelle esecuzioni del
+  28/10/2026 (3 fallimenti su 100 run). (1) Push concorrente fra cron
+  interno ed esterno: il `git pull --rebase` andava in conflitto sullo
+  stesso `docs/feed.xml` e il run falliva; ora, se il push è rifiutato, il
+  workflow riparte dall'ultimo `origin/main` e riapplica il feed appena
+  generato (fino a 4 tentativi). (2) 403 transitorio del sito sorgente: lo
+  step "Genera il feed" viene ritentato una volta dopo 2 minuti prima di
+  segnare il run come fallito. Aggiornate anche le action
+  (`checkout@v5`, `setup-python@v6`) per l'avviso di deprecazione di
+  Node.js 20.

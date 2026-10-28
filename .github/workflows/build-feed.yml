@@ -43,10 +43,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -64,7 +64,19 @@ jobs:
           PROXY_SERVER: ${{ secrets.PROXY_SERVER }}
           PROXY_USERNAME: ${{ secrets.PROXY_USERNAME }}
           PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
-        run: python scripts/generate_feed.py
+        run: |
+          # Il sito sorgente blocca a volte i runner con un 403 transitorio:
+          # ritenta una volta dopo una pausa prima di dichiarare il run fallito.
+          ok=0
+          for i in 1 2; do
+            if python scripts/generate_feed.py; then
+              ok=1
+              break
+            fi
+            echo "Generazione fallita (tentativo $i)."
+            if [ "$i" -lt 2 ]; then sleep 120; fi
+          done
+          [ "$ok" = 1 ] || exit 1
 
       - name: Commit e push solo se il feed è cambiato
         run: |
@@ -72,15 +84,32 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if git diff --quiet -- docs/feed.xml; then
             echo "Nessuna modifica al feed, niente da committare."
-          else
+            exit 0
+          fi
+          cp docs/feed.xml "$RUNNER_TEMP/feed.xml"
+          git add docs/feed.xml
+          git commit -m "Aggiorna feed.xml [skip ci]"
+          # Push concorrente (cron interno + esterno): il feed viene
+          # rigenerato a ogni run, quindi in caso di conflitto si riparte
+          # dall'ultimo origin/main e si riapplica il feed appena generato
+          # (niente rebase, che andrebbe in conflitto sullo stesso file).
+          pushed=0
+          for i in 1 2 3 4; do
+            if git push; then
+              pushed=1
+              break
+            fi
+            echo "Push fallito (tentativo $i), riparto da origin/main e ritento..."
+            git fetch origin main
+            git reset --hard origin/main
+            cp "$RUNNER_TEMP/feed.xml" docs/feed.xml
+            if git diff --quiet -- docs/feed.xml; then
+              echo "Il feed su origin/main è già identico, niente da pubblicare."
+              pushed=1
+              break
+            fi
             git add docs/feed.xml
             git commit -m "Aggiorna feed.xml [skip ci]"
-            # ritenta con rebase in caso di push concorrente (cron interno + esterno)
-            for i in 1 2 3; do
-              if git push; then
-                break
-              fi
-              echo "Push fallito (tentativo $i), provo pull --rebase e ritento..."
-              git pull --rebase origin main
-            done
-          fi
+            sleep $((i * 5))
+          done
+          [ "$pushed" = 1 ] || exit 1
