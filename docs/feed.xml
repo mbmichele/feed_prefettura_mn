@@ -6,7 +6,14 @@
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
     <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/feed.xml" rel="self" type="application/rss+xml" />
-    <lastBuildDate>Thu, 29 Oct 2026 15:01:54 +0100</lastBuildDate>
+    <lastBuildDate>Thu, 29 Oct 2026 16:01:55 +0100</lastBuildDate>
+    <item>
+      <title>Il Prefetto incontra il nuovo Comandante della Legione CC Lombardia</title>
+      <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-incontra-nuovo-comandante-legione-cc-lombardia</link>
+      <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-incontra-nuovo-comandante-legione-cc-lombardia</guid>
+      <pubDate>Thu, 29 Oct 2026 00:00:00 +0100</pubDate>
+      <description>Il Prefetto della provincia di Mantova Roberto Bolognesi incontra il nuovo Comandante della Legione Carabinieri "Lombardia", Generale di Divisione Arturo GUARINO Nella mattinata odierna, il Prefetto della provincia di Mantova dott. Roberto Bolognesi ha ricevuto in Prefettura il Generale di Divisione Arturo GUARINO, dal 14 ottobre al Comando della Legione Carabinieri "Lombardia", accompagnato dal Comandante Provinciale dei Carabinieri, Colonnello Pancrazio Dario Vigliotta. L’incontro, svoltosi in un clima di viva cordialità e profonda collaborazione, ha rappresentato l'occasione per fare il...</description>
+    </item>
     <item>
       <title>Mantova–Cremonese: divieto vendita tagliandi ai residenti di Cremona</title>
       <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/mantova-cremonese-divieto-vendita-tagliandi-residenti-cremona</link>
