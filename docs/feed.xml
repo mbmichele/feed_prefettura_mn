@@ -6,7 +6,14 @@
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
     <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/feed.xml" rel="self" type="application/rss+xml" />
-    <lastBuildDate>Fri, 30 Oct 2026 15:01:53 +0100</lastBuildDate>
+    <lastBuildDate>Fri, 30 Oct 2026 16:01:56 +0100</lastBuildDate>
+    <item>
+      <title>PROGRAMMA DELLE CELEBRAZIONI DEL 2 E 4 NOVEMBRE 2026</title>
+      <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/programma-celebrazioni-2-e-4-novembre-2026</link>
+      <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/programma-celebrazioni-2-e-4-novembre-2026</guid>
+      <pubDate>Wed, 04 Nov 2026 00:00:00 +0100</pubDate>
+      <description>Prefettura di Mantova- Ufficio Territoriale del Governo Mantova, 2 novembre 2026 “Commemorazione dei Defunti” Mantova, 4 novembre 2026 “Giorno dell’Unità Nazionale e Giornata delle Forze Armate” PROGRAMMA DELLE CELEBRAZIONI 2 NOVEMBRE 2026 Cerimonia presso il Cimitero Monumentale Ore 11.20: arrivo delle Autorità Ore 11.30: inizio delle celebrazioni Deposizione della corona a commemorazione dei Caduti. A seguire Commemorazione dei Defunti. A seguire Benedizione alle tombe del “Riquadro Militare”. In caso di maltempo, la celebrazione della Commemorazione dei Defunti si terrà alle ore 11.30 pr...</description>
+    </item>
     <item>
       <title>Il Prefetto incontra il nuovo Comandante della Legione CC Lombardia</title>
       <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/prefetto-incontra-nuovo-comandante-legione-cc-lombardia</link>
