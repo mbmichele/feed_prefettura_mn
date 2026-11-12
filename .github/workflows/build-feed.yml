@@ -54,7 +54,20 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Installa Chromium (Playwright)
-        run: playwright install --with-deps chromium
+        run: |
+          # I mirror apt di Ubuntu usati da "--with-deps" a volte falliscono
+          # con un errore DNS/rete transitorio lato runner GitHub-hosted:
+          # ritenta prima di dichiarare il run fallito.
+          ok=0
+          for i in 1 2 3; do
+            if playwright install --with-deps chromium; then
+              ok=1
+              break
+            fi
+            echo "Installazione Chromium fallita (tentativo $i)."
+            if [ "$i" -lt 3 ]; then sleep 30; fi
+          done
+          [ "$ok" = 1 ] || exit 1
 
       - name: Genera il feed
         env:
