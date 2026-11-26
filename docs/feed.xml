@@ -6,7 +6,14 @@
     <description>Feed RSS non ufficiale, generato automaticamente, delle notizie e dei comunicati stampa pubblicati sul sito della Prefettura di Mantova. Non è un servizio ufficiale della Prefettura.</description>
     <language>it-IT</language>
     <atom:link href="https://mbmichele.github.io/feed_prefettura_mn/feed.xml" rel="self" type="application/rss+xml" />
-    <lastBuildDate>Thu, 26 Nov 2026 14:02:21 +0100</lastBuildDate>
+    <lastBuildDate>Thu, 26 Nov 2026 15:02:22 +0100</lastBuildDate>
+    <item>
+      <title>Festività natalizie e per i festeggiamenti di fine anno 2026</title>
+      <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/festivita-natalizie-e-i-festeggiamenti-fine-anno-2026</link>
+      <guid isPermaLink="true">https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/festivita-natalizie-e-i-festeggiamenti-fine-anno-2026</guid>
+      <pubDate>Thu, 26 Nov 2026 00:00:00 +0100</pubDate>
+      <description>Festività natalizie e per i festeggiamenti di fine anno 2026: esaminati in Prefettura i profili di sicurezza Implementazione dei dispositivi di prevenzione e controllo in vista delle imminenti festività natalizie, analisi delle iniziative programmate per i festeggiamenti di fine anno 2026 nel Comune capoluogo di Mantova e predisposizione delle correlate misure di sicurezza. Questi gli argomenti all’ordine del giorno della riunione odierna del Comitato Provinciale per l'Ordine e la Sicurezza Pubblica, presieduto dal Prefetto della provincia di Mantova Roberto Bolognesi.</description>
+    </item>
     <item>
       <title>PROGRAMMA DELLE CELEBRAZIONI DEL 2 E 4 NOVEMBRE 2026</title>
       <link>https://prefettura.interno.gov.it/it/prefetture/mantova/notizie/programma-celebrazioni-2-e-4-novembre-2026</link>
